@@ -5,7 +5,7 @@
 
     "builds": [
         { 
-            "src": "src/index.js",
+            "src": "./src/index.js",
             "use": "@vercel/node"
         }
     ],
@@ -13,7 +13,7 @@
     "routes": [
         { 
             "src": "/(.*)",
-            "dest": "src/public/index.html"
+            "dest": "./src/public/index.html"
         }
     ]
 }
