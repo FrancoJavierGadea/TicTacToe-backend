@@ -8,11 +8,13 @@ const port = process.env.PORT || 3000;
 
 const app = express();
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
     cors: {
-        origin: '*',
+        origin: 'https://francojaviergadea.github.io',
         methods: ['GET', 'POST']
     }
 });
@@ -60,6 +62,8 @@ io.on("connection", (socket) => {
 
         socket.to(room).emit('joined-game', {ok: true, message: 'Conectado a la sala', data: {turn}});
 
+        socket.to(room).emit('receive-message', {ok: true, message: 'Mensaje Recivido', data: {message: `${name} conectado...`, player: 'player 2', type: 'notification'}});
+
         return done({ok: true, message: 'Conectado a la sala'});
     });
 
@@ -97,6 +101,20 @@ io.on("connection", (socket) => {
         done({ok: true, message: 'Movimiento Enviado'});
     });
 
+
+    socket.on('send-message', ({message, name, player}, done) => {
+
+        const {room} = socket.data;
+
+        //check if the socket is in the room
+        if( !socket.rooms.has(room) ) return done({ok: false, message: 'No estas en esta sala'});
+
+
+        io.to(room).emit('receive-message', {ok: true, message: 'Mensaje Recivido', data: {message, name, player}});
+
+        done({ok: true, message: 'Mensaje Enviado'});
+    });
+
     socket.on('update-player', (data, done) => {
 
         const {player} = data;
@@ -110,27 +128,32 @@ io.on("connection", (socket) => {
 
     socket.on('leave-game', (data, done) => {
 
-        const {room, player} = socket.data;
+        const {room, player, name} = socket.data;
 
         socket.leave(room);
-        socket.data.room = undefined;
-        socket.data.player = undefined;
-
+        
         if(room){
-
-            io.to(room).emit('disconnect-player', {ok: false, message: 'Jugador desconectado', data: {player}});
+            
+            io.to(room).emit('disconnect-player', {ok: true, message: 'Jugador desconectado', data: {player}});
+            
+            io.to(room).emit('receive-message', {ok: true, message: 'Mensaje Recivido', data: {message: `${name} desconectado...`, player, type: 'notification'}});
         }
 
+        socket.data.room = undefined;
+        socket.data.player = undefined;
+        
         done({ok: true, message: "Has abandonado la sala"});
     });
 
     socket.on("disconnect", (reason) => {
 
-        const {room, player} = socket.data;
+        const {room, player, name} = socket.data;
 
         if(room){
 
-            io.to(room).emit('disconnect-player', {ok: false, message: 'Jugador desconectado', data: {player}});
-        }
+            io.to(room).emit('disconnect-player', {ok: true, message: 'Jugador desconectado', data: {player}});
+
+            io.to(room).emit('receive-message', {ok: true, message: 'Mensaje Recivido', data: {message: `${name} desconectado...`, player, type: 'notification'}});
+        }   
     });
 });
