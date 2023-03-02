@@ -15,6 +15,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
         origin: 'https://francojaviergadea.github.io',
+        //origin: '*',
         methods: ['GET', 'POST']
     }
 });
